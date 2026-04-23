@@ -69,7 +69,22 @@
     </div>
 
     <script>
-        // --- LOGIC: SAVING ---
+// --- LOGIC 1: TAB SWITCHING (The part that was missing!) ---
+function switchTab(mode) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    if(mode === 'creator') {
+        document.getElementById('creator-view').classList.add('active');
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    } else {
+        loadTest(); // This runs the recognition logic
+        document.getElementById('test-view').classList.add('active');
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    }
+}
+
+// --- LOGIC 2: SAVING CONTENT ---
 function saveData() {
     const data = {
         title: document.getElementById('input-title').value,
@@ -77,51 +92,88 @@ function saveData() {
         questions: document.getElementById('input-questions').value
     };
     localStorage.setItem('myIeltsTest', JSON.stringify(data));
-    alert("System updated!");
+    alert("Test saved locally! Click 'Start Practice' to begin.");
 }
 
-// --- LOGIC: SMART LOADING ---
+// --- LOGIC 3: SMART RECOGNITION ---
 function loadTest() {
     const saved = localStorage.getItem('myIeltsTest');
     if(!saved) return;
     const data = JSON.parse(saved);
 
-    document.getElementById('display-title').innerText = data.title;
+    document.getElementById('display-title').innerText = data.title || "IELTS Practice Session";
     
-    // Format the passage: Add spaces between paragraphs automatically
+    // Format the passage with proper paragraphs
     document.getElementById('display-passage').innerHTML = data.passage
         .split('\n')
-        .map(para => para.trim() ? `<p>${para}</p>` : '')
+        .filter(para => para.trim() !== "")
+        .map(para => `<p style="margin-bottom: 1.5em;">${para.trim()}</p>`)
         .join('');
     
     let qHtml = '';
     const lines = data.questions.split('\n');
+    let autoNumber = 1;
 
     lines.forEach((line) => {
         line = line.trim();
         if (!line) return;
 
-        // SMART RECOGNITION:
-        // If a line starts with a number followed by a dot (e.g., "1. "), treat it as a question.
-        const questionMatch = line.match(/^(\d+)\.\s*(.*)/);
+        // --- SMART FILTER ---
+        // We define "Instruction" lines as things containing keywords like "Questions", "TRUE", or very short lines.
+        const isInstruction = line.includes("Questions") || 
+                              line.includes("Passage") || 
+                              line.includes("TRUE") || 
+                              line.includes("FALSE") || 
+                              line.includes("NOT GIVEN") ||
+                              line.length < 25;
 
-        if (questionMatch) {
-            const qNum = questionMatch[1];
-            const qText = questionMatch[2];
-            qHtml += `
-                <div class="q-item" style="margin-bottom: 20px;">
-                    <p><strong>${qNum}.</strong> ${qText}</p>
-                    <input type="text" class="ielts-input" placeholder="Enter answer..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                </div>`;
+        if (isInstruction) {
+            // Display as a bold heading/instruction
+            qHtml += `<h4 style="margin-top: 25px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">${line}</h4>`;
         } else {
-            // Otherwise, treat it as an instruction heading (Bold, no input box)
-            qHtml += `<h4 style="margin-top: 30px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px;">${line}</h4>`;
+            // Detect if the user already numbered it (e.g. "1. Text")
+            const hasNumber = line.match(/^(\d+)[.)\s]/);
+            let displayLine = line;
+            
+            if (!hasNumber) {
+                displayLine = `${autoNumber}. ${line}`;
+                autoNumber++;
+            } else {
+                // If it was already numbered, use that number for the next auto-count
+                autoNumber = parseInt(hasNumber[1]) + 1;
+            }
+
+            qHtml += `
+                <div class="q-item" style="margin-bottom: 25px;">
+                    <p style="margin-bottom: 8px;"><strong>${displayLine}</strong></p>
+                    <input type="text" class="ielts-input" placeholder="Type answer..." 
+                           style="width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+                </div>`;
         }
     });
 
     document.getElementById('display-questions').innerHTML = qHtml;
 }
-    </script>
+
+// --- LOGIC 4: TIMER ---
+let time = 3600;
+setInterval(() => {
+    let m = Math.floor(time / 60);
+    let s = time % 60;
+    const timerElement = document.getElementById('timer');
+    if(timerElement) timerElement.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    if(time > 0) time--;
+}, 1000);
+
+// --- LOGIC 5: STARTUP ---
+window.onload = () => {
+    const saved = localStorage.getItem('myIeltsTest');
+    if(saved) {
+        const data = JSON.parse(saved);
+        document.getElementById('input-title').value = data.title || "";
+        document.getElementById('input-passage').value = data.passage || "";
+        document.getElementById('input-questions').value = data.questions || "";
+    }
+};    </script>
 </body>
 </html>
