@@ -4,34 +4,36 @@
     <meta charset="UTF-8">
     <title>Personal IELTS Practice System</title>
     <style>
-.ielts-input:focus {
-    outline: none;
-    border: 2px solid #004f9a !important; /* The official IELTS blue focus color */
-    background-color: #f0f7ff;
-}
-        :root { --ielts-blue: #004f9a; --ielts-grey: #f4f4f4; --ielts-yellow: #fff3cd; }
-        body { font-family: 'Arial', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        :root { --ielts-blue: #004f9a; --ielts-grey: #f4f4f4; --ielts-yellow: #fff3cd; --correct: #d4edda; --wrong: #f8d7da; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* HEADER & TABS */
         .header { background: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .tab-bar { background: #eee; padding: 5px 20px; border-bottom: 1px solid #ccc; }
-        .tab-btn { padding: 8px 15px; cursor: pointer; border: none; background: #ddd; margin-right: 5px; }
+        .tab-bar { background: #eee; padding: 5px 20px; border-bottom: 1px solid #ccc; display: flex; gap: 5px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #ddd; font-weight: bold; }
         .tab-btn.active { background: var(--ielts-blue); color: white; }
 
-        /* VIEW MODES */
         .view { display: none; flex: 1; overflow: hidden; }
         .view.active { display: flex; }
 
-        /* CREATOR MODE (INPUT) */
-        #creator-view { flex-direction: column; padding: 40px; gap: 20px; overflow-y: auto; background: #fafafa; }
-        textarea { width: 100%; min-height: 200px; padding: 15px; border: 1px solid #ccc; font-family: inherit; }
-        .save-btn { padding: 15px; background: #28a745; color: white; border: none; cursor: pointer; font-size: 16px; font-weight: bold; align-self: flex-start; }
+        /* CREATOR MODE */
+        #creator-view { flex-direction: column; padding: 30px; gap: 15px; overflow-y: auto; background: #fafafa; }
+        textarea { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #ccc; font-family: inherit; border-radius: 4px; }
+        .save-btn { padding: 15px 30px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; align-self: flex-start; }
 
-        /* TEST MODE (UI) */
+        /* TEST MODE */
         .passage-side { flex: 1; padding: 40px; overflow-y: auto; background: white; border-right: 2px solid #ccc; line-height: 1.8; font-size: 18px; }
-        .question-side { flex: 1; padding: 40px; overflow-y: auto; background: white; }
-        .q-item { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .question-side { flex: 1; padding: 40px; overflow-y: auto; background: white; position: relative; }
+        .q-item { margin-bottom: 25px; padding: 10px; border-radius: 5px; transition: 0.3s; }
+        .ielts-input { width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; transition: 0.2s; }
+        .ielts-input:focus { border-color: var(--ielts-blue); outline: none; background: #f0f7ff; }
+        
+        /* Feedback Styles */
+        .correct-box { background-color: var(--correct); border: 1px solid #28a745; }
+        .wrong-box { background-color: var(--wrong); border: 1px solid #dc3545; }
+        .feedback-text { font-size: 14px; font-weight: bold; display: block; margin-top: 5px; }
 
+        .check-btn { position: sticky; bottom: 0; width: 100%; padding: 15px; background: var(--ielts-blue); color: white; border: none; font-weight: bold; cursor: pointer; }
+        
         .timer { font-size: 22px; color: #ffdb58; font-weight: bold; }
         ::selection { background: var(--ielts-yellow); }
     </style>
@@ -49,131 +51,143 @@
     </div>
 
     <div id="creator-view" class="view active">
-        <h2>Load Your Test Content</h2>
-        <label><b>Test Title:</b></label>
-        <input type="text" id="input-title" placeholder="e.g. Cambridge 18 - Test 1" style="padding: 10px;">
+        <input type="text" id="input-title" placeholder="Test Title" style="padding: 10px; font-size: 18px;">
         
-        <label><b>Paste Passage (HTML allowed):</b></label>
-        <textarea id="input-passage" placeholder="Paste the long article text here..."></textarea>
+        <label><b>1. Passage Content:</b></label>
+        <textarea id="input-passage" placeholder="Paste the reading article text here..."></textarea>
         
-        <label><b>Paste Questions (One per line):</b></label>
-        <textarea id="input-questions" placeholder="Question 1: What is...?&#10;Question 2: Who was...?"></textarea>
+        <label><b>2. Questions (Paste exactly as they appear):</b></label>
+        <textarea id="input-questions" placeholder="Questions 1-6...&#10;1. The reductionist paradigm..."></textarea>
+
+        <label><b>3. Answer Key (Paste the Answers block from the PDF):</b></label>
+        <textarea id="input-answers" placeholder="1. FALSE&#10;2. FALSE&#10;3. TRUE..."></textarea>
         
         <button class="save-btn" onclick="saveData()">Save & Update System</button>
-        <p style="color: #666;"><i>Note: This saves to your browser. You can refresh and it will stay here.</i></p>
     </div>
 
     <div id="test-view" class="view">
         <div class="passage-side" id="display-passage"></div>
-        <div class="question-side" id="display-questions"></div>
+        <div class="question-side">
+            <div id="display-questions"></div>
+            <button class="check-btn" onclick="checkAnswers()">Check My Answers</button>
+        </div>
     </div>
 
     <script>
-// --- LOGIC 1: TAB SWITCHING (The part that was missing!) ---
-function switchTab(mode) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    
-    if(mode === 'creator') {
-        document.getElementById('creator-view').classList.add('active');
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    } else {
-        loadTest(); // This runs the recognition logic
-        document.getElementById('test-view').classList.add('active');
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-    }
-}
-
-// --- LOGIC 2: SAVING CONTENT ---
-function saveData() {
-    const data = {
-        title: document.getElementById('input-title').value,
-        passage: document.getElementById('input-passage').value,
-        questions: document.getElementById('input-questions').value
-    };
-    localStorage.setItem('myIeltsTest', JSON.stringify(data));
-    alert("Test saved locally! Click 'Start Practice' to begin.");
-}
-
-// --- LOGIC 3: SMART RECOGNITION ---
-function loadTest() {
-    const saved = localStorage.getItem('myIeltsTest');
-    if(!saved) return;
-    const data = JSON.parse(saved);
-
-    document.getElementById('display-title').innerText = data.title || "IELTS Practice Session";
-    
-    // Format the passage with proper paragraphs
-    document.getElementById('display-passage').innerHTML = data.passage
-        .split('\n')
-        .filter(para => para.trim() !== "")
-        .map(para => `<p style="margin-bottom: 1.5em;">${para.trim()}</p>`)
-        .join('');
-    
-    let qHtml = '';
-    const lines = data.questions.split('\n');
-    let autoNumber = 1;
-
-    lines.forEach((line) => {
-        line = line.trim();
-        if (!line) return;
-
-        // --- SMART FILTER ---
-        // We define "Instruction" lines as things containing keywords like "Questions", "TRUE", or very short lines.
-        const isInstruction = line.includes("Questions") || 
-                              line.includes("Passage") || 
-                              line.includes("TRUE") || 
-                              line.includes("FALSE") || 
-                              line.includes("NOT GIVEN") ||
-                              line.length < 25;
-
-        if (isInstruction) {
-            // Display as a bold heading/instruction
-            qHtml += `<h4 style="margin-top: 25px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">${line}</h4>`;
-        } else {
-            // Detect if the user already numbered it (e.g. "1. Text")
-            const hasNumber = line.match(/^(\d+)[.)\s]/);
-            let displayLine = line;
-            
-            if (!hasNumber) {
-                displayLine = `${autoNumber}. ${line}`;
-                autoNumber++;
+        // --- 1. TAB NAVIGATION ---
+        function switchTab(mode) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(mode === 'creator') {
+                document.getElementById('creator-view').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
             } else {
-                // If it was already numbered, use that number for the next auto-count
-                autoNumber = parseInt(hasNumber[1]) + 1;
+                loadTest();
+                document.getElementById('test-view').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
             }
-
-            qHtml += `
-                <div class="q-item" style="margin-bottom: 25px;">
-                    <p style="margin-bottom: 8px;"><strong>${displayLine}</strong></p>
-                    <input type="text" class="ielts-input" placeholder="Type answer..." 
-                           style="width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
-                </div>`;
         }
-    });
 
-    document.getElementById('display-questions').innerHTML = qHtml;
-}
+        // --- 2. STORAGE ---
+        function saveData() {
+            const data = {
+                title: document.getElementById('input-title').value,
+                passage: document.getElementById('input-passage').value,
+                questions: document.getElementById('input-questions').value,
+                answers: document.getElementById('input-answers').value
+            };
+            localStorage.setItem('myIeltsTest', JSON.stringify(data));
+            alert("Ready! Go to 'Start Practice'.");
+        }
 
-// --- LOGIC 4: TIMER ---
-let time = 3600;
-setInterval(() => {
-    let m = Math.floor(time / 60);
-    let s = time % 60;
-    const timerElement = document.getElementById('timer');
-    if(timerElement) timerElement.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-    if(time > 0) time--;
-}, 1000);
+        // --- 3. SMART LOADING & RECOGNITION ---
+        function loadTest() {
+            const saved = localStorage.getItem('myIeltsTest');
+            if(!saved) return;
+            const data = JSON.parse(saved);
 
-// --- LOGIC 5: STARTUP ---
-window.onload = () => {
-    const saved = localStorage.getItem('myIeltsTest');
-    if(saved) {
-        const data = JSON.parse(saved);
-        document.getElementById('input-title').value = data.title || "";
-        document.getElementById('input-passage').value = data.passage || "";
-        document.getElementById('input-questions').value = data.questions || "";
-    }
-};    </script>
+            document.getElementById('display-title').innerText = data.title || "IELTS Test";
+            document.getElementById('display-passage').innerHTML = data.passage.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+            
+            let qHtml = '';
+            const lines = data.questions.split('\n');
+            let qNumber = 1;
+
+            lines.forEach((line) => {
+                line = line.trim();
+                if (!line) return;
+
+                // STRICTOR FILTER: These keywords are almost always instructions, not questions
+                const instrKeywords = ["Questions", "boxes", "write:", "agree", "sheet", "TRUE", "FALSE", "NOT GIVEN", "YES", "NO", "Choose"];
+                const isInstr = instrKeywords.some(kw => line.includes(kw));
+
+                if (isInstr || line.length > 250) {
+                    qHtml += `<h4 style="margin-top:25px; color:#444; border-bottom:1px solid #eee;">${line}</h4>`;
+                } else {
+                    // Remove existing "1." if pasted to avoid "1. 1."
+                    const cleanedLine = line.replace(/^\d+[.)\s]*/, '');
+                    qHtml += `
+                        <div class="q-item" id="q-container-${qNumber-1}">
+                            <p><strong>${qNumber}.</strong> ${cleanedLine}</p>
+                            <input type="text" class="ielts-input" data-idx="${qNumber-1}">
+                            <div class="feedback-text" id="feedback-${qNumber-1}"></div>
+                        </div>`;
+                    qNumber++;
+                }
+            });
+            document.getElementById('display-questions').innerHTML = qHtml;
+        }
+
+        // --- 4. CHECK ANSWERS ENGINE ---
+        function checkAnswers() {
+            const saved = localStorage.getItem('myIeltsTest');
+            const data = JSON.parse(saved);
+            
+            // Extracts the first word (the answer) from lines like "1. FALSE. The text..."
+            const answers = data.answers.split('\n')
+                .filter(a => a.trim())
+                .map(a => a.replace(/^\d+[.)\s]*/, '').split(/[.\s]/)[0].toLowerCase());
+
+            const inputs = document.querySelectorAll('.ielts-input');
+
+            inputs.forEach((input, i) => {
+                const userVal = input.value.trim().toLowerCase();
+                const correctVal = answers[i];
+                const container = document.getElementById(`q-container-${i}`);
+                const feedback = document.getElementById(`feedback-${i}`);
+
+                if (userVal === correctVal) {
+                    container.className = "q-item correct-box";
+                    feedback.innerHTML = "✅ Correct";
+                    feedback.style.color = "green";
+                } else {
+                    container.className = "q-item wrong-box";
+                    // Shows the full original answer line from the key for context
+                    const fullAnswer = data.answers.split('\n').filter(a => a.trim())[i];
+                    feedback.innerHTML = `❌ Wrong. Correct: <b>${fullAnswer}</b>`;
+                    feedback.style.color = "red";
+                }
+            });
+        }
+
+        // --- 5. TIMER & STARTUP ---
+        let time = 3600;
+        setInterval(() => {
+            let m = Math.floor(time / 60); let s = time % 60;
+            document.getElementById('timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if(time > 0) time--;
+        }, 1000);
+
+        window.onload = () => {
+            const saved = localStorage.getItem('myIeltsTest');
+            if(saved) {
+                const d = JSON.parse(saved);
+                document.getElementById('input-title').value = d.title || "";
+                document.getElementById('input-passage').value = d.passage || "";
+                document.getElementById('input-questions').value = d.questions || "";
+                document.getElementById('input-answers').value = d.answers || "";
+            }
+        };
+    </script>
 </body>
 </html>
