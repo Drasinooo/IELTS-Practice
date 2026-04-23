@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>Personal IELTS Practice System</title>
     <style>
+.ielts-input:focus {
+    outline: none;
+    border: 2px solid #004f9a !important; /* The official IELTS blue focus color */
+    background-color: #f0f7ff;
+}
         :root { --ielts-blue: #004f9a; --ielts-grey: #f4f4f4; --ielts-yellow: #fff3cd; }
         body { font-family: 'Arial', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
@@ -64,72 +69,59 @@
     </div>
 
     <script>
-        // --- LOGIC: TAB SWITCHING ---
-        function switchTab(mode) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            if(mode === 'creator') {
-                document.getElementById('creator-view').classList.add('active');
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-            } else {
-                loadTest();
-                document.getElementById('test-view').classList.add('active');
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            }
+        // --- LOGIC: SAVING ---
+function saveData() {
+    const data = {
+        title: document.getElementById('input-title').value,
+        passage: document.getElementById('input-passage').value,
+        questions: document.getElementById('input-questions').value
+    };
+    localStorage.setItem('myIeltsTest', JSON.stringify(data));
+    alert("System updated!");
+}
+
+// --- LOGIC: SMART LOADING ---
+function loadTest() {
+    const saved = localStorage.getItem('myIeltsTest');
+    if(!saved) return;
+    const data = JSON.parse(saved);
+
+    document.getElementById('display-title').innerText = data.title;
+    
+    // Format the passage: Add spaces between paragraphs automatically
+    document.getElementById('display-passage').innerHTML = data.passage
+        .split('\n')
+        .map(para => para.trim() ? `<p>${para}</p>` : '')
+        .join('');
+    
+    let qHtml = '';
+    const lines = data.questions.split('\n');
+
+    lines.forEach((line) => {
+        line = line.trim();
+        if (!line) return;
+
+        // SMART RECOGNITION:
+        // If a line starts with a number followed by a dot (e.g., "1. "), treat it as a question.
+        const questionMatch = line.match(/^(\d+)\.\s*(.*)/);
+
+        if (questionMatch) {
+            const qNum = questionMatch[1];
+            const qText = questionMatch[2];
+            qHtml += `
+                <div class="q-item" style="margin-bottom: 20px;">
+                    <p><strong>${qNum}.</strong> ${qText}</p>
+                    <input type="text" class="ielts-input" placeholder="Enter answer..." 
+                           style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>`;
+        } else {
+            // Otherwise, treat it as an instruction heading (Bold, no input box)
+            qHtml += `<h4 style="margin-top: 30px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px;">${line}</h4>`;
         }
+    });
 
-        // --- LOGIC: SAVING TO BROWSER ---
-        function saveData() {
-            const data = {
-                title: document.getElementById('input-title').value,
-                passage: document.getElementById('input-passage').value,
-                questions: document.getElementById('input-questions').value.split('\n')
-            };
-            localStorage.setItem('myIeltsTest', JSON.stringify(data));
-            alert("System updated! Go to 'Start Practice' tab.");
-        }
-
-        // --- LOGIC: LOADING INTO UI ---
-        function loadTest() {
-            const saved = localStorage.getItem('myIeltsTest');
-            if(!saved) return;
-            const data = JSON.parse(saved);
-
-            document.getElementById('display-title').innerText = data.title;
-            document.getElementById('display-passage').innerHTML = data.passage.replace(/\n/g, '<br>');
-            
-            let qHtml = '';
-            data.questions.forEach((q, index) => {
-                if(q.trim() !== "") {
-                    qHtml += `<div class="q-item">
-                                <p><strong>${index + 1}.</strong> ${q}</p>
-                                <input type="text" placeholder="Type answer here..." style="width: 80%; padding: 5px;">
-                              </div>`;
-                }
-            });
-            document.getElementById('display-questions').innerHTML = qHtml;
-        }
-
-        // --- LOGIC: TIMER ---
-        let time = 3600;
-        setInterval(() => {
-            let m = Math.floor(time / 60);
-            let s = time % 60;
-            document.getElementById('timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-            if(time > 0) time--;
-        }, 1000);
-
-        // Load data automatically on startup if it exists
-        window.onload = () => {
-            const saved = localStorage.getItem('myIeltsTest');
-            if(saved) {
-                const data = JSON.parse(saved);
-                document.getElementById('input-title').value = data.title;
-                document.getElementById('input-passage').value = data.passage;
-                document.getElementById('input-questions').value = data.questions.join('\n');
-            }
-        };
+    document.getElementById('display-questions').innerHTML = qHtml;
+}
     </script>
 </body>
 </html>
