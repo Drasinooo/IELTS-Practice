@@ -2,191 +2,245 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Personal IELTS Practice System</title>
+    <title>IELTS Precision Architect v13.0</title>
     <style>
-        :root { --ielts-blue: #004f9a; --ielts-grey: #f4f4f4; --ielts-yellow: #fff3cd; --correct: #d4edda; --wrong: #f8d7da; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --ielts-blue: #004f9a; --correct: #d4edda; --wrong: #f8d7da; --text: #1a1a1a; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f4f7f9; color: var(--text); }
         
-        .header { background: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .tab-bar { background: #eee; padding: 5px 20px; border-bottom: 1px solid #ccc; display: flex; gap: 5px; }
-        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #ddd; font-weight: bold; }
-        .tab-btn.active { background: var(--ielts-blue); color: white; }
+        .header { background: #333; color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--ielts-blue); }
+        .tab-bar { background: #e0e0e0; padding: 5px 25px; display: flex; gap: 8px; border-bottom: 1px solid #ccc; }
+        .tab-btn { padding: 10px 25px; cursor: pointer; border: none; background: #d0d0d0; font-weight: bold; color: #555; border-radius: 4px 4px 0 0; transition: 0.2s; }
+        .tab-btn.active { background: white; color: var(--ielts-blue); border: 1px solid #ccc; border-bottom: none; }
 
-        .view { display: none; flex: 1; overflow: hidden; }
+        .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
         .view.active { display: flex; }
 
-        /* CREATOR MODE */
-        #creator-view { flex-direction: column; padding: 30px; gap: 15px; overflow-y: auto; background: #fafafa; }
-        textarea { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #ccc; font-family: inherit; border-radius: 4px; }
-        .save-btn { padding: 15px 30px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; align-self: flex-start; }
+        /* SETUP VIEW */
+        #input-view { padding: 30px; gap: 20px; overflow-y: auto; background: white; margin: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .input-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        textarea { width: 100%; min-height: 120px; padding: 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical; }
+        .build-btn { padding: 18px 50px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 6px; align-self: flex-start; }
 
-        /* TEST MODE */
-        .passage-side { flex: 1; padding: 40px; overflow-y: auto; background: white; border-right: 2px solid #ccc; line-height: 1.8; font-size: 18px; }
-        .question-side { flex: 1; padding: 40px; overflow-y: auto; background: white; position: relative; }
-        .q-item { margin-bottom: 25px; padding: 10px; border-radius: 5px; transition: 0.3s; }
-        .ielts-input { width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; transition: 0.2s; }
+        /* PRACTICE INTERFACE */
+        .passage-nav { background: #fff; padding: 10px 40px; display: flex; gap: 15px; border-bottom: 1px solid #ddd; }
+        .p-nav-btn { padding: 8px 20px; cursor: pointer; border: 1px solid #ccc; background: #f8f9fa; border-radius: 20px; font-weight: bold; transition: 0.2s; }
+        .p-nav-btn.active { background: var(--ielts-blue); color: white; border-color: var(--ielts-blue); }
+
+        .main-area { display: flex; flex: 1; overflow: hidden; }
+        .pass-side { flex: 1; padding: 45px; overflow-y: auto; background: white; border-right: 2px solid #ddd; line-height: 1.9; font-size: 18.5px; }
+        .ques-side { flex: 1; padding: 45px; overflow-y: auto; background: #fdfdfd; position: relative; }
+        
+        .p-title { font-size: 1.4em; font-weight: 800; color: #000; margin-bottom: 5px; }
+        .p-subtitle { font-size: 1.1em; font-weight: 600; color: #444; margin-bottom: 25px; display: block; }
+        
+        .instr-box { margin-top: 35px; color: #333; border-left: 6px solid var(--ielts-blue); padding: 18px; background: #f8f9fa; font-weight: 700; border-radius: 0 6px 6px 0; }
+        .q-card { margin-bottom: 30px; padding: 25px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .mcq-opt { display: block; margin-left: 25px; margin-top: 10px; color: #444; font-size: 16.5px; }
+        .ielts-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; margin-top: 15px; font-size: 17px; box-sizing: border-box; }
         .ielts-input:focus { border-color: var(--ielts-blue); outline: none; background: #f0f7ff; }
-        
-        /* Feedback Styles */
-        .correct-box { background-color: var(--correct); border: 1px solid #28a745; }
-        .wrong-box { background-color: var(--wrong); border: 1px solid #dc3545; }
-        .feedback-text { font-size: 14px; font-weight: bold; display: block; margin-top: 5px; }
 
-        .check-btn { position: sticky; bottom: 0; width: 100%; padding: 15px; background: var(--ielts-blue); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .fb-text { font-size: 15px; font-weight: bold; margin-top: 12px; display: block; }
+        .correct { border-color: #28a745 !important; background-color: #f0fff4; }
+        .wrong { border-color: #dc3545 !important; background-color: #fff5f5; }
         
-        .timer { font-size: 22px; color: #ffdb58; font-weight: bold; }
-        ::selection { background: var(--ielts-yellow); }
+        .check-btn { position: sticky; bottom: 0; width: 100%; padding: 22px; background: var(--ielts-blue); color: white; border: none; font-weight: bold; cursor: pointer; font-size: 1.2em; }
+        .timer { font-size: 24px; color: #ffdb58; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div id="display-title">IELTS Practice System</div>
+        <div style="font-weight: bold;">IELTS Precision Architect v13.0</div>
         <div class="timer" id="timer">60:00</div>
     </div>
 
     <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('creator')">1. Setup Content</button>
-        <button class="tab-btn" onclick="switchTab('test')">2. Start Practice</button>
+        <button class="tab-btn active" onclick="switchTab('input')">1. Setup Content</button>
+        <button class="tab-btn" onclick="switchTab('practice')">2. Live Practice</button>
     </div>
 
-    <div id="creator-view" class="view active">
-        <input type="text" id="input-title" placeholder="Test Title" style="padding: 10px; font-size: 18px;">
-        
-        <label><b>1. Passage Content:</b></label>
-        <textarea id="input-passage" placeholder="Paste the reading article text here..."></textarea>
-        
-        <label><b>2. Questions (Paste exactly as they appear):</b></label>
-        <textarea id="input-questions" placeholder="Questions 1-6...&#10;1. The reductionist paradigm..."></textarea>
-
-        <label><b>3. Answer Key (Paste the Answers block from the PDF):</b></label>
-        <textarea id="input-answers" placeholder="1. FALSE&#10;2. FALSE&#10;3. TRUE..."></textarea>
-        
-        <button class="save-btn" onclick="saveData()">Save & Update System</button>
+    <div id="input-view" class="view active">
+        <div class="input-box">
+            <label><b>Box 1: All Reading Passages</b> (Use <i>Reading Passage [1-3]: [Title]</i> as separators)</label>
+            <textarea id="bulk-pass" placeholder="Paste full articles here..."></textarea>
+        </div>
+        <div class="input-box">
+            <label><b>Box 2: All Questions</b> (System splits by 'Passage 1/2/3' or jump in numbering)</label>
+            <textarea id="bulk-ques" placeholder="Paste all questions here..."></textarea>
+        </div>
+        <div class="input-box">
+            <label><b>Box 3: All Answer Keys</b> (Paste the full numbered list here)</label>
+            <textarea id="bulk-ans" placeholder="Paste full numbered Answer Key here..."></textarea>
+        </div>
+        <button class="build-btn" onclick="processBulk()">Construct Test</button>
     </div>
 
-    <div id="test-view" class="view">
-        <div class="passage-side" id="display-passage"></div>
-        <div class="question-side">
-            <div id="display-questions"></div>
-            <button class="check-btn" onclick="checkAnswers()">Check My Answers</button>
+    <div id="practice-view" class="view">
+        <div class="passage-nav">
+            <button class="p-nav-btn active" onclick="changePassage(0)">Reading Passage 1</button>
+            <button class="p-nav-btn" onclick="changePassage(1)">Reading Passage 2</button>
+            <button class="p-nav-btn" onclick="changePassage(2)">Reading Passage 3</button>
+        </div>
+        <div class="main-area">
+            <div class="pass-side" id="out-pass"></div>
+            <div class="ques-side">
+                <div id="out-ques"></div>
+                <button class="check-btn" onclick="checkAll()">Verify My Answers</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. TAB NAVIGATION ---
-        function switchTab(mode) {
+        let currentP = 0;
+        let activeData = [];
+
+        function switchTab(t) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(mode === 'creator') {
-                document.getElementById('creator-view').classList.add('active');
+            if(t === 'input') {
+                document.getElementById('input-view').classList.add('active');
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
             } else {
-                loadTest();
-                document.getElementById('test-view').classList.add('active');
+                renderUI();
+                document.getElementById('practice-view').classList.add('active');
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
             }
         }
 
-        // --- 2. STORAGE ---
-        function saveData() {
-            const data = {
-                title: document.getElementById('input-title').value,
-                passage: document.getElementById('input-passage').value,
-                questions: document.getElementById('input-questions').value,
-                answers: document.getElementById('input-answers').value
-            };
-            localStorage.setItem('myIeltsTest', JSON.stringify(data));
-            alert("Ready! Go to 'Start Practice'.");
+        function processBulk() {
+            const rawP = document.getElementById('bulk-pass').value;
+            const rawQ = document.getElementById('bulk-ques').value;
+            const rawA = document.getElementById('bulk-ans').value;
+
+            // 1. Passage Splitting Logic
+            const pParts = rawP.split(/Reading Passage\s+([123]):\s*/i);
+            const passages = [];
+            for (let i = 1; i < pParts.length; i += 2) {
+                passages.push(pParts[i+1].trim());
+            }
+
+            // 2. Question Splitting Logic (Anchor points: Passage 1/2/3 markers)
+            const qParts = rawQ.split(/Questions?\s+\d+[-–]\d+\s*\(?Passage\s+[123]\)?/i).filter(s => s.trim().length > 10);
+
+            // 3. Answer Key Map
+            const ansMap = {};
+            rawA.split('\n').forEach(l => {
+                const m = l.match(/(\d+)\.\s*(.*)/);
+                if (m) ansMap[m[1]] = m[2].trim();
+            });
+
+            activeData = passages.map((p, idx) => ({
+                content: p,
+                questions: qParts[idx] || "",
+                answers: ansMap
+            }));
+
+            localStorage.setItem('ielts_architect_v13', JSON.stringify(activeData));
+            alert("Blueprint Loaded! " + passages.length + " Passages ready.");
         }
 
-        // --- 3. SMART LOADING & RECOGNITION ---
-        function loadTest() {
-            const saved = localStorage.getItem('myIeltsTest');
-            if(!saved) return;
-            const data = JSON.parse(saved);
+        function changePassage(idx) {
+            currentP = idx;
+            document.querySelectorAll('.p-nav-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+            renderUI();
+        }
 
-            document.getElementById('display-title').innerText = data.title || "IELTS Test";
-            document.getElementById('display-passage').innerHTML = data.passage.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+        function renderUI() {
+            const d = activeData[currentP];
+            if(!d) return;
+
+            // Passage Rendering with Title/Subtitle bolding
+            const pLines = d.content.split('\n').filter(l => l.trim());
+            document.getElementById('out-pass').innerHTML = pLines.map((l, i) => {
+                if(i === 0) return `<div class="p-title">${l}</div>`;
+                if(i === 1) return `<div class="p-subtitle">${l}</div>`;
+                return `<p>${l}</p>`;
+            }).join('');
             
-            let qHtml = '';
-            const lines = data.questions.split('\n');
-            let qNumber = 1;
+            let html = '';
+            const qLines = d.questions.split('\n');
 
-            lines.forEach((line) => {
+            qLines.forEach(line => {
                 line = line.trim();
-                if (!line) return;
+                // BULLET POINT FIX: Support ●, •, *, -
+                line = line.replace(/^[●•*-]\s*/, '');
+                if(!line || line.match(/^_{3,}$/)) return;
 
-                // STRICTOR FILTER: These keywords are almost always instructions, not questions
-                const instrKeywords = ["Questions", "boxes", "write:", "agree", "sheet", "TRUE", "FALSE", "NOT GIVEN", "YES", "NO", "Choose"];
-                const isInstr = instrKeywords.some(kw => line.includes(kw));
+                const keywords = ["Questions", "boxes", "write:", "agree", "Choose", "TRUE", "FALSE", "NOT GIVEN", "YES", "NO"];
+                const allNum = [...line.matchAll(/(\d+)\./g)];
 
-                if (isInstr || line.length > 250) {
-                    qHtml += `<h4 style="margin-top:25px; color:#444; border-bottom:1px solid #eee;">${line}</h4>`;
+                if (keywords.some(k => line.includes(k)) && allNum.length === 0) {
+                    html += `<div class="instr-box">${line}</div>`;
+                } else if (allNum.length > 0) {
+                    allNum.forEach(m => {
+                        const qNum = m[1];
+                        // CONTEXT FIX: Replace only the current question's number with a placeholder
+                        const regex = new RegExp(`\\b${qNum}\\.\\s*(_*)`, 'g');
+                        let cleanText = line.replace(regex, ' (____) ');
+                        
+                        const parts = cleanText.split(/\s*([A-D]\.\s+)/);
+                        let stem = parts[0];
+                        let opts = '';
+                        for (let j = 1; j < parts.length; j += 2) {
+                            opts += `<span class="mcq-opt"><strong>${parts[j]}</strong>${parts[j+1]}</span>`;
+                        }
+
+                        html += `
+                            <div class="q-card" id="q-${qNum}">
+                                <p><strong>${qNum}.</strong> ${stem}</p>
+                                ${opts}
+                                <input type="text" class="ielts-input" data-qn="${qNum}" placeholder="Enter answer for ${qNum}...">
+                                <div class="fb-text" id="fb-${qNum}"></div>
+                            </div>`;
+                    });
                 } else {
-                    // Remove existing "1." if pasted to avoid "1. 1."
-                    const cleanedLine = line.replace(/^\d+[.)\s]*/, '');
-                    qHtml += `
-                        <div class="q-item" id="q-container-${qNumber-1}">
-                            <p><strong>${qNumber}.</strong> ${cleanedLine}</p>
-                            <input type="text" class="ielts-input" data-idx="${qNumber-1}">
-                            <div class="feedback-text" id="feedback-${qNumber-1}"></div>
-                        </div>`;
-                    qNumber++;
+                    html += `<p style="padding: 5px 20px; color: #555;">${line}</p>`;
                 }
             });
-            document.getElementById('display-questions').innerHTML = qHtml;
+            document.getElementById('out-ques').innerHTML = html;
         }
 
-        // --- 4. CHECK ANSWERS ENGINE ---
-        function checkAnswers() {
-            const saved = localStorage.getItem('myIeltsTest');
-            const data = JSON.parse(saved);
-            
-            // Extracts the first word (the answer) from lines like "1. FALSE. The text..."
-            const answers = data.answers.split('\n')
-                .filter(a => a.trim())
-                .map(a => a.replace(/^\d+[.)\s]*/, '').split(/[.\s]/)[0].toLowerCase());
+        function checkAll() {
+    const inputs = document.querySelectorAll('.ielts-input');
+    const map = activeData[currentP].answers;
 
-            const inputs = document.querySelectorAll('.ielts-input');
+    inputs.forEach(input => {
+        const n = input.getAttribute('data-qn');
+        const user = input.value.trim().toLowerCase();
+        const full = map[n] || "";
+        
+        // NEW LOGIC: Remove the number (e.g., "26. ") but keep the rest of the words intact
+        const clean = full.replace(/^\d+[.)\s]*/, '').trim();
+        
+        // Remove parenthetical notes if they exist, but keep multiple words
+        const core = clean.split(/\s\(/)[0].toLowerCase();
 
-            inputs.forEach((input, i) => {
-                const userVal = input.value.trim().toLowerCase();
-                const correctVal = answers[i];
-                const container = document.getElementById(`q-container-${i}`);
-                const feedback = document.getElementById(`feedback-${i}`);
+        const card = document.getElementById(`q-${n}`);
+        const fb = document.getElementById(`fb-${n}`);
 
-                if (userVal === correctVal) {
-                    container.className = "q-item correct-box";
-                    feedback.innerHTML = "✅ Correct";
-                    feedback.style.color = "green";
-                } else {
-                    container.className = "q-item wrong-box";
-                    // Shows the full original answer line from the key for context
-                    const fullAnswer = data.answers.split('\n').filter(a => a.trim())[i];
-                    feedback.innerHTML = `❌ Wrong. Correct: <b>${fullAnswer}</b>`;
-                    feedback.style.color = "red";
-                }
-            });
+        if(user === core) {
+            card.className = "q-card correct";
+            fb.innerHTML = `✅ Correct: <b>${clean}</b>`;
+            fb.style.color = "#155724";
+        } else {
+            card.className = "q-card wrong";
+            fb.innerHTML = `❌ Incorrect. Correct: <b>${clean}</b>`;
+            fb.style.color = "#721c24";
         }
+    });
+}
 
-        // --- 5. TIMER & STARTUP ---
-        let time = 3600;
+        let timer = 3600;
         setInterval(() => {
-            let m = Math.floor(time / 60); let s = time % 60;
-            document.getElementById('timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-            if(time > 0) time--;
+            let m = Math.floor(timer / 60); let s = timer % 60;
+            const el = document.getElementById('timer');
+            if(el) el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if(timer > 0) timer--;
         }, 1000);
 
         window.onload = () => {
-            const saved = localStorage.getItem('myIeltsTest');
-            if(saved) {
-                const d = JSON.parse(saved);
-                document.getElementById('input-title').value = d.title || "";
-                document.getElementById('input-passage').value = d.passage || "";
-                document.getElementById('input-questions').value = d.questions || "";
-                document.getElementById('input-answers').value = d.answers || "";
-            }
+            const saved = localStorage.getItem('ielts_architect_v13');
+            if(saved) activeData = JSON.parse(saved);
         };
     </script>
 </body>
